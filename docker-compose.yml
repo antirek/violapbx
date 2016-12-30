@@ -13,27 +13,27 @@ services:
       volumes:
         - "/etc/localtime:/etc/localtime:ro"
         - "/var/store/redis/:/data"
+      network_mode: "host"
       restart: always
 
   lolo:
       build: ./dockerfiles/asterisk/
       volumes:
+        - "/etc/localtime:/etc/localtime:ro"
         - "./config/etc/asterisk/:/etc/asterisk/"
       network_mode: "host"      
-      volumes:
-        - "/etc/localtime:/etc/localtime:ro"
       restart: always
 
   mysql:
       image: mysql:5.7
       environment:
         - MYSQL_ROOT_PASSWORD=1234
-        - MYSQL_DATABASE=cdr
+        - MYSQL_DATABASE=logcall
       network_mode: "host"
       volumes:
         - "/etc/localtime:/etc/localtime:ro"
         - "/var/store/mysql/lib/mysql:/var/lib/mysql"
-        - "./misc/cdr/:/docker-entrypoint-initdb.d"
+      #   - "./misc/cdr/:/docker-entrypoint-initdb.d"
       restart: always
 
   configserver:
