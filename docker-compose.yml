@@ -21,6 +21,7 @@ services:
       volumes:
         - "/etc/localtime:/etc/localtime:ro"
         - "./config/etc/asterisk/:/etc/asterisk/"
+        - "./var/lua:/var/lua"
       network_mode: "host"      
       restart: always
 

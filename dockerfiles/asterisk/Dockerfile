@@ -1,4 +1,4 @@
-FROM antirek/astolua
+FROM antirek/asterisk-lua:latest
 
 ADD after_start.sh /after_start.sh
 
