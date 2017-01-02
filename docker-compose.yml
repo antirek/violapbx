@@ -22,7 +22,7 @@ services:
         - "/etc/localtime:/etc/localtime:ro"
         - "./config/etc/asterisk/:/etc/asterisk/"
         - "./var/lua:/var/lua"
-      network_mode: "host"      
+      network_mode: "host"
       restart: always
 
   mysql:
@@ -42,9 +42,12 @@ services:
       volumes:
         - "/etc/localtime:/etc/localtime:ro"
       restart: always
+      depends_on:
+        - mongodb
+      network_mode: "host"
 
-  logcallserver:
-      build: ./dockerfiles/logcallserver
-      volumes:
-        - "/etc/localtime:/etc/localtime:ro"
-      restart: always
+#  logcallserver:
+#      build: ./dockerfiles/logcallserver
+#      volumes:
+#        - "/etc/localtime:/etc/localtime:ro"
+#      restart: always
