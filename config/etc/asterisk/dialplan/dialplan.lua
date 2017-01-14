@@ -1,5 +1,5 @@
 
---local request = require('/etc/asterisk/dialplan/1');
+local request = require('/etc/asterisk/dialplan/1');
 
 local dial = function (context, extension)
     app.noop("context: " .. context .. ", extension: " .. extension);
