@@ -24,6 +24,7 @@ services:
         - "./var/lua:/var/lua"
       network_mode: "host"
       restart: always
+      tty: true
 
   mysql:
       image: mysql:5.7
