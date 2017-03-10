@@ -5,21 +5,23 @@ local redis = require 'redis'
 
 local rclient = redis.connect('127.0.0.1', 6379)
 
-local resurl = 'http://192.168.1.41:3030/';
 
-local jwtrequest = function (tokenIn)
+local jwtClient = function (params)
+    assert(params.password);
+    assert(params.resurl);
+    assert(params.phone);
+    -- @todo: добавить опцию дебага
 
     local hc = httpclient.new();
-    local authenticated = false;
-    local token = tokenIn;
+    local token = nil;
 
     local authByLoginPassword = function ()
-        local authurl = resurl .. 'auth/local';
+        local authurl = params.resurl .. 'auth/local';
 
         local postdata = {
             ['type'] = "local";
-            ['password'] = "pulivu";
-            ['phone'] = "9135292926";
+            ['password'] = params.password;
+            ['phone'] = params.phone;
         };
 
         local data = JSON:encode(postdata);
@@ -31,46 +33,64 @@ local jwtrequest = function (tokenIn)
         local token = JSON:decode(res.body).token;
         
         return token;
-    end
+    end;
 
-    local makeRequest = function ()
-        local url = resurl .. 'payments';
+    local makeRequest = function (req)
+        local url = params.resurl .. req;
         app.noop('url: '..url);
 
         local headers = {
             authorization = token;
         };
 
-        local res = hc:get(url, {headers = headers});
-
-
-        return res;
+        return hc:get(url, {headers = headers});
     end;
     
-    local res = makeRequest()
+    local request = function (resource, tokenIn)
+        token = tokenIn or token;   -- токен может сохраниться от предыдущего запроса
 
-    app.noop('rees:'..inspect(res));
-    app.noop('code:'..inspect(res.code))
+        local res = makeRequest(resource)
 
-    if res.code == 401 then 
-       token = authByLoginPassword()
-       res = makeRequest()
-    end;
+        -- app.noop('rees:'..inspect(res));
+        -- app.noop('code:'..inspect(res.code))
+
+        if res.code == 401 then 
+           token = authByLoginPassword()
+           res = makeRequest(resource)
+        end;
+
+        return token, res;
+    end
     
-    return res, token;
-    
+    return {
+        request = request;
+    };
+
 end;
 
 
+
+
+
 local httprequest = function (context, extension)
-    
+    local params = {
+        resurl = 'http://192.168.1.41:3030/';
+        phone = '9135292926';
+        password = 'pulivu'
+    };
     
     local t1 = os.clock();
 
     local t = rclient:get('token');
 
 --    local t = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiaWF0IjoxNDg4OTUxODQwLCJleHAiOjE0ODkwMzgyNDAsImlzcyI6ImZlYXRoZXJzIn0.1Ysfrc-JCN9o1vyltxZbnGFLO4AL62zfwofU5oD5QU0";
-    local res, token = jwtrequest(t);
+    local client = jwtClient(params);
+
+    token, res = client.request('payments', t);
+    app.noop('r1'..inspect(token))
+
+    token, res = client.request('payments');
+    app.noop('r2'..inspect(token))
 
     rclient:set('token', token);
 
