@@ -10,7 +10,12 @@ local jwtClient = function (params)
     assert(params.password);
     assert(params.resurl);
     assert(params.phone);
-    -- @todo: добавить опцию дебага
+
+    local debug = function (title, body)
+        if params.debug then 
+            app.noop(title..": "..inspect(body));
+        end
+    end
 
     local hc = httpclient.new();
     local token = nil;
@@ -25,10 +30,10 @@ local jwtClient = function (params)
         };
 
         local data = JSON:encode(postdata);
-        app.noop("json:"..data);
+        debug("json", data);
 
         local res = hc:post(authurl, data, {content_type = "application/json"});
-        app.noop("post: "..inspect(res));
+        debug("post", res);
 
         local token = JSON:decode(res.body).token;
         
@@ -37,7 +42,7 @@ local jwtClient = function (params)
 
     local makeRequest = function (req)
         local url = params.resurl .. req;
-        app.noop('url: '..url);
+        debug('url', url);
 
         local headers = {
             authorization = token;
@@ -49,18 +54,22 @@ local jwtClient = function (params)
     local request = function (resource, tokenIn)
         token = tokenIn or token;   -- токен может сохраниться от предыдущего запроса
 
-        local res = makeRequest(resource)
+        local response = makeRequest(resource)
 
-        -- app.noop('rees:'..inspect(res));
-        -- app.noop('code:'..inspect(res.code))
+        debug('return resource first time', response);
+        debug('response code', response.code);
 
-        if res.code == 401 then 
-           token = authByLoginPassword()
-           res = makeRequest(resource)
+        if response.code == 401 then 
+            token = authByLoginPassword()
+            debug('try get new token', token);
+            if token then
+                response = makeRequest(resource);
+                debug('return resource second time', response);
+            end;
         end;
 
-        return token, res;
-    end
+        return token, response;
+    end;
     
     return {
         request = request;
@@ -70,20 +79,19 @@ end;
 
 
 
-
-
 local httprequest = function (context, extension)
     local params = {
         resurl = 'http://192.168.1.41:3030/';
         phone = '9135292926';
-        password = 'pulivu'
+        password = 'pulivu';
+        debug = true;
     };
     
     local t1 = os.clock();
 
     local t = rclient:get('token');
 
---    local t = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiaWF0IjoxNDg4OTUxODQwLCJleHAiOjE0ODkwMzgyNDAsImlzcyI6ImZlYXRoZXJzIn0.1Ysfrc-JCN9o1vyltxZbnGFLO4AL62zfwofU5oD5QU0";
+    -- local t = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiaWF0IjoxNDg4OTUxODQwLCJleHAiOjE0ODkwMzgyNDAsImlzcyI6ImZlYXRoZXJzIn0.1Ysfrc-JCN9o1vyltxZbnGFLO4AL62zfwofU5oD5QU0";
     local client = jwtClient(params);
 
     token, res = client.request('payments', t);
@@ -94,17 +102,8 @@ local httprequest = function (context, extension)
 
     rclient:set('token', token);
 
-    app.noop('response:'..inspect(res));
-
-    if res.body then
-      app.noop(res.body);
-    else
-      app.noop(res.err);
-    end;
-
-
-    local lua_value = JSON:decode(res.body);
-    app.noop(inspect(lua_value));
+    -- local lua_value = JSON:decode(res.body);
+    -- app.noop(inspect(lua_value));
 
     app.noop('difftime: '..tostring(os.clock() - t1));
 end
