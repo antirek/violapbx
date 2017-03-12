@@ -1,3 +1,5 @@
+local https = require "ssl.https";
+local inspect = require "inspect";
 
 local request = require('/etc/asterisk/dialplan/1');
 
@@ -31,6 +33,17 @@ local ivr = function (context, extension)
     end;
 end;
 
+local ssl = function (context, extension)
+
+    local body, code, headers, status = https.request({
+        url = "https://requestb.in/yd4qv8yd";
+        protocol = "tlsv1_1"
+    });
+    
+    app.noop('check:'..inspect({body, code, headers, status}));
+    app.hangup();
+
+end;
 
 
 local Dialplan = {
@@ -46,6 +59,8 @@ local Dialplan = {
                 ["_1XX"] = dial;
 
                 ["200"] = ivr;
+
+                ["300"] = ssl;
             };           
         };
     end;
